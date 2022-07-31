@@ -32,7 +32,6 @@ func main() { //func getTrains
 	data, err := io.ReadAll(jsonfile)
 	checkForErrors(err)
 	var trains Trains
-	//fmt.Println(string(data))
 	err = json.Unmarshal(data, &trains)
 	checkForErrors(err)
 	for i, v := range trains {
@@ -41,10 +40,7 @@ func main() { //func getTrains
 			break
 		}
 	}
-	// data := make([]byte, 179)
-	// jsonfile.Read(data)
-	// fmt.Println(string(data))
-
+	fmt.Println("hello")
 }
 
 func (t *Train) UnmarshalJSON(data []byte) error {
