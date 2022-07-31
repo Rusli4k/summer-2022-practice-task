@@ -40,7 +40,7 @@ func main() { //func getTrains
 			break
 		}
 	}
-	fmt.Println("hello")
+
 }
 
 func (t *Train) UnmarshalJSON(data []byte) error {
