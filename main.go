@@ -19,31 +19,40 @@ type Train struct {
 	DepartureTime      time.Time
 }
 
-func checkForErrors(err error) {
-	if err != nil {
-		fmt.Println("error is detected:", err)
-	}
-}
-
 func main() { //func getTrains
-	jsonfile, err := os.Open("data.json")
-	defer jsonfile.Close()
-	checkForErrors(err)
-	data, err := io.ReadAll(jsonfile)
-	checkForErrors(err)
-	var trains Trains
-	err = json.Unmarshal(data, &trains)
-	checkForErrors(err)
-	for i, v := range trains {
+	var (
+		departureStation string
+		arrivalStation   string
+		criteria         string
+	)
+	fmt.Println("Please, input departure station:")
+	fmt.Scanln(&departureStation)
+	fmt.Println("and where are you going:")
+	fmt.Scanln(&arrivalStation)
+	fmt.Println("result may be sorts by:")
+	fmt.Scanln(&criteria)
+	var ts Trains
+	ts.UnmarshalTrains("data.json")
+
+	for i, v := range ts {
 		fmt.Println(i, v)
 		if i == 5 {
 			break
 		}
 	}
-
 }
 
-func (t *Train) UnmarshalJSON(data []byte) error {
+func (t *Trains) UnmarshalTrains(f string) { // func for unmarshaling from file to slice of structs Train.  Take name of file
+	jfile, err := os.Open("data.json")
+	defer jfile.Close()
+	checkForErrors(err)
+	data, err := io.ReadAll(jfile)
+	checkForErrors(err)
+	err = json.Unmarshal(data, &t)
+	checkForErrors(err)
+}
+
+func (t *Train) UnmarshalJSON(data []byte) error { //addon for customizing Unmarshal for non standart time format
 	type Alias Train
 	aux := &struct {
 		ArrivalTime   string
@@ -68,4 +77,10 @@ func (t *Train) UnmarshalJSON(data []byte) error {
 	}
 
 	return nil
+}
+
+func checkForErrors(err error) { //when you repeat some code more then three times, make function  - "Rule of Three"
+	if err != nil {
+		fmt.Println("error was detected:", err)
+	}
 }
