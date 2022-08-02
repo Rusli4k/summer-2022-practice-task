@@ -22,35 +22,29 @@ type Train struct {
 	DepartureTime      time.Time
 }
 
-func main() { //func getTrains
+func main() {
 
-	// func main() {
-	//     // ... запит даних від користувача
-	//     result, err := FindTrains(departureStation, arrivalStation, criteria))
-	//     // ... обробка помилки
-	//     // ... друк result
-	// }
 	var (
 		departureStation string
 		arrivalStation   string
 		criteria         string
 	)
 
-	// fmt.Println("Please, input departure station: (press ENTER after input)")
-	// fmt.Scanln(&departureStation)
+	fmt.Println("Please, input departure station: (press ENTER after input)")
+	fmt.Scanln(&departureStation)
 
-	// fmt.Println("and where are you going: (press ENTER after input)")
-	// fmt.Scanln(&arrivalStation)
+	fmt.Println("and where are you going: (press ENTER after input)")
+	fmt.Scanln(&arrivalStation)
 
-	// fmt.Println("result may be sorts by price/arrival-time/departure-time: (press ENTER after input)")
-	// fmt.Scanln(&criteria)
-	departureStation = "1929"
-	arrivalStation = "1921"
-	criteria = "arrival-time"
+	fmt.Println("result may be sorts by price/arrival-time/departure-time: (press ENTER after input)")
+	fmt.Scanln(&criteria)
 
-	//result, err := FindTrains(departureStation, arrivalStation, criteria)
 	result, err := FindTrains(departureStation, arrivalStation, criteria)
 	checkForErrors(err)
+	if result == nil {
+		fmt.Println("sorry, but no one train found by your criteria")
+	}
+
 	for _, v := range result {
 		fmt.Printf("%+v\n", v)
 	}
@@ -101,6 +95,7 @@ func FindTrains(departureStation, arrivalStation, criteria string) (Trains, erro
 			ans = append(ans, v)
 		}
 	}
+
 	switch criteria {
 	case criteria1:
 		sort.SliceStable(ans, func(i, j int) bool {
@@ -116,16 +111,21 @@ func FindTrains(departureStation, arrivalStation, criteria string) (Trains, erro
 		})
 	}
 
-	if len(ans) >= 3 {
+	switch {
+	case len(ans) == 0:
+		return nil, nil
+	case len(ans) >= 3:
 		return ans[:3], nil
+	default:
+		return ans, nil
 	}
-	return ans, nil
+
 }
 
 func (t *Trains) UnmarshalTrains(f string) { // func for unmarshaling from file to slice of structs Train.  Take name of file
 	jfile, err := os.Open("data.json")
-	defer jfile.Close()
 	checkForErrors(err)
+	defer jfile.Close()
 	data, err := io.ReadAll(jfile)
 	checkForErrors(err)
 	err = json.Unmarshal(data, &t)
