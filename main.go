@@ -29,7 +29,7 @@ func main() {
 		arrivalStation   string
 		criteria         string
 	)
-
+	//Input from user
 	fmt.Println("Please, input departure station: (press ENTER after input)")
 	fmt.Scanln(&departureStation)
 
@@ -45,7 +45,7 @@ func main() {
 		fmt.Println("sorry, but no one train found by your criteria")
 	}
 
-	for _, v := range result {
+	for _, v := range result { //output for user
 		fmt.Printf("%+v\n", v)
 	}
 }
@@ -133,25 +133,25 @@ func (t *Trains) UnmarshalTrains(f string) { // func for unmarshaling from file 
 }
 
 func (t *Train) UnmarshalJSON(data []byte) error { //addon for customizing Unmarshal for non standart time format
-	type Alias Train
-	aux := &struct {
+	type Alias Train //Copy of our structure
+	aux := &struct { //temp variable of struct
 		ArrivalTime   string
 		DepartureTime string
 		*Alias
 	}{
-		Alias: (*Alias)(t),
+		Alias: (*Alias)(t), //fill others fields from our struct
 	}
-	err := json.Unmarshal(data, &aux)
+	err := json.Unmarshal(data, &aux) // unmarshal data and check for an error
 	if err != nil {
 		return err
 	}
 
-	t.ArrivalTime, err = time.Parse("15:04:05", aux.ArrivalTime)
+	t.ArrivalTime, err = time.Parse("15:04:05", aux.ArrivalTime) // parse time from "string" of temp struct into "time.Time" using the mask
 	if err != nil {
 		return err
 	}
 
-	t.DepartureTime, err = time.Parse("15:04:05", aux.DepartureTime)
+	t.DepartureTime, err = time.Parse("15:04:05", aux.DepartureTime) // parse time from "string" of temp struct into "time.Time" using the mask
 	if err != nil {
 		return err
 	}
