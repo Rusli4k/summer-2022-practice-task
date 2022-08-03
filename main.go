@@ -1,24 +1,166 @@
 package main
 
+import (
+	"encoding/json"
+	"errors"
+	"fmt"
+	"io"
+	"os"
+	"sort"
+	"strconv"
+	"time"
+)
+
 type Trains []Train
 
 type Train struct {
-	TrainID            int       
-	DepartureStationID int       
-	ArrivalStationID   int       
-	Price              float32   
-	ArrivalTime        time.Time 
+	TrainID            int
+	DepartureStationID int
+	ArrivalStationID   int
+	Price              float32
+	ArrivalTime        time.Time
 	DepartureTime      time.Time
 }
 
 func main() {
-	//	... запит даних від користувача
-	//result, err := FindTrains(departureStation, arrivalStation, criteria))
-	//	... обробка помилки
-	//	... друк result
+
+	var (
+		departureStation string
+		arrivalStation   string
+		criteria         string
+	)
+	//Input from user
+	fmt.Println("Please, input departure station: (press ENTER after input)")
+	fmt.Scanln(&departureStation)
+
+	fmt.Println("and where are you going: (press ENTER after input)")
+	fmt.Scanln(&arrivalStation)
+
+	fmt.Println("result may be sorts by price/arrival-time/departure-time: (press ENTER after input)")
+	fmt.Scanln(&criteria)
+
+	result, err := FindTrains(departureStation, arrivalStation, criteria)
+	checkForErrors(err)
+	if result == nil {
+		fmt.Println("sorry, but no one train found by your criteria")
+	}
+
+	for _, v := range result { //output for user
+		fmt.Printf("%+v\n", v)
+	}
 }
 
 func FindTrains(departureStation, arrivalStation, criteria string) (Trains, error) {
-	// ... код
-	return nil, nil // маєте повернути правильні значення
+	var ( //IMHO we can use variable of the struct Train, but one repeat is better than one dependency
+		departureStationID int
+		arrivalStationID   int
+	)
+	var ts Trains
+	var ans Trains
+
+	const (
+		criteria1 = "price"
+		criteria2 = "arrival-time"
+		criteria3 = "departure-time"
+	)
+	ts.UnmarshalTrains("data.json") //reading data about trains from file
+
+	//checks for invalid input of departureStation
+	if departureStation == "" {
+		return nil, errors.New("empty departure station")
+	}
+	res, err := strconv.ParseUint(departureStation, 10, 0)
+	if err != nil {
+		return nil, errors.New("bad departure station input")
+	}
+	departureStationID = int(res) //type convert without error check because int>uint
+
+	//checks for invalid input of arrivalStation
+	if arrivalStation == "" {
+		return nil, errors.New("empty arrival station")
+	}
+	res, err = strconv.ParseUint(arrivalStation, 10, 0)
+	if err != nil {
+		return nil, errors.New("bad arrival station input")
+	}
+	arrivalStationID = int(res) //type convert without error check because int>uint
+
+	//check for invalid input of criteria
+	if criteria != criteria1 && criteria != criteria2 && criteria != criteria3 {
+		return nil, errors.New("unsupported criteria")
+	}
+
+	for _, v := range ts {
+		if v.ArrivalStationID == arrivalStationID && v.DepartureStationID == departureStationID {
+			ans = append(ans, v)
+		}
+	}
+
+	switch criteria {
+	case criteria1:
+		sort.SliceStable(ans, func(i, j int) bool {
+			return ans[i].Price < ans[j].Price
+		})
+	case criteria2:
+		sort.SliceStable(ans, func(i, j int) bool {
+			return ans[i].ArrivalTime.Before(ans[j].ArrivalTime)
+		})
+	case criteria3:
+		sort.SliceStable(ans, func(i, j int) bool {
+			return ans[i].DepartureTime.Before(ans[j].DepartureTime)
+		})
+	}
+
+	switch {
+	case len(ans) == 0:
+		return nil, nil
+	case len(ans) >= 3:
+		return ans[:3], nil
+	default:
+		return ans, nil
+	}
+
+}
+
+func (t *Trains) UnmarshalTrains(f string) { // func for unmarshaling from file to slice of structs Train.  Take name of file
+	jfile, err := os.Open("data.json")
+	checkForErrors(err)
+	defer jfile.Close()
+	data, err := io.ReadAll(jfile)
+	checkForErrors(err)
+	err = json.Unmarshal(data, &t)
+	checkForErrors(err)
+}
+
+func (t *Train) UnmarshalJSON(data []byte) error { //addon for customizing Unmarshal for non standart time format
+	type Alias Train //Copy of our structure
+	aux := &struct { //temp variable of struct
+		ArrivalTime   string
+		DepartureTime string
+		*Alias
+	}{
+		Alias: (*Alias)(t), //fill others fields from our struct
+	}
+	err := json.Unmarshal(data, &aux) // unmarshal data and check for an error
+	if err != nil {
+		return err
+	}
+
+	t.ArrivalTime, err = time.Parse("15:04:05", aux.ArrivalTime) // parse time from "string" of temp struct into "time.Time" using the mask
+	if err != nil {
+		return err
+	}
+
+	t.DepartureTime, err = time.Parse("15:04:05", aux.DepartureTime) // parse time from "string" of temp struct into "time.Time" using the mask
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func checkForErrors(err error) { //when you repeat some code more then three times, make function  - "Rule of Three"
+	if err != nil {
+		fmt.Println("error was detected:", err)
+	}
 }
